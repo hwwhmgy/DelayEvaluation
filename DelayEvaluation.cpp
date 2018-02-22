@@ -112,15 +112,25 @@ cLabel* labelTestLoop;
 //participant index
 int participantindex = 0;
 //num of test for each participant
-int maxtest = 100;
+int maxtest = 10;
 //cuttent test index
 int curLoop = 0;
+//
+int innerLoop = 0;
 //participant give an answer
 bool bAnswered = false;
+// answer right or wrong
+bool bAnaseredRight = false;
 //stiffness coefficient for the three object, now all of the three are given the same value
 float stiffcoeff1 = 0.5;
 float stiffcoeff2 = 0.5;
 float stiffcoeff3 = 0.5;
+//coeff  array
+float coeff[20];
+int maxDiv = 20;
+int curTimeIndex = maxDiv / 2;
+int curStiffIndex = maxDiv / 2;
+int stepSize = 2;
 //the index of the object which the delay is applied
 int DelayObjIndex = 0;
 //current delay time
@@ -222,7 +232,13 @@ int main(int argc, char* argv[])
 	cout << "[3] - the right one" << endl;
 	cout << endl << endl;
 
-
+	//initial stiffness array
+	float div = 1.0 / (float)maxDiv;
+	for (int i = 0; i < maxDiv; i++)
+	{
+		coeff[i] = (i + 1)*div;
+	}
+	
 	//--------------------------------------------------------------------------
 	// OPEN GL - WINDOW DISPLAY
 	//--------------------------------------------------------------------------
@@ -657,6 +673,9 @@ int main(int argc, char* argv[])
 	labelTestLoop->m_fontColor.setBlack();
 	camera->m_frontLayer->addChild(labelTestLoop);
 	
+	DelayObjIndex = rand() % 3;
+	tool->m_delayObject = base[DelayObjIndex];
+	timeDelay = 0.5 * maxTimeDelay;
 
     // create a background
     background = new cBackground();
@@ -777,23 +796,35 @@ void keyCallback(GLFWwindow* a_window, int a_key, int a_scancode, int a_action, 
     }
 	else if ((a_key == GLFW_KEY_1))
 	{
-		fprintf(fileCache, "%d,%f,%f,%f,%d,1\n", curLoop, stiffcoeff1*maxStiffness, timeDelay, frequency, DelayObjIndex);
+		fprintf(fileCache, "%d,%f,%f,%f,%d,1\n", curLoop, coeff[curStiffIndex] * maxStiffness, timeDelay, frequency, DelayObjIndex);
 		bAnswered = true;
+		if (DelayObjIndex == 0)
+			bAnaseredRight = true;
+		else
+			bAnaseredRight = false;
 	}
 	else if ((a_key == GLFW_KEY_2))
 	{
-		fprintf(fileCache, "%d,%f,%f,%f,%d,2\n", curLoop, stiffcoeff1*maxStiffness, timeDelay, frequency, DelayObjIndex);
+		fprintf(fileCache, "%d,%f,%f,%f,%d,2\n", curLoop, coeff[curStiffIndex] * maxStiffness, timeDelay, frequency, DelayObjIndex);
 		bAnswered = true;
+		if (DelayObjIndex == 1)
+			bAnaseredRight = true;
+		else
+			bAnaseredRight = false;
 	}
 	else if ((a_key == GLFW_KEY_3))
 	{
-		fprintf(fileCache, "%d,%f,%f,%f,%d,3\n", curLoop, stiffcoeff1*maxStiffness, timeDelay, frequency, DelayObjIndex);
+		fprintf(fileCache, "%d,%f,%f,%f,%d,3\n", curLoop, coeff[curStiffIndex] * maxStiffness, timeDelay, frequency, DelayObjIndex);
 		bAnswered = true;
+		if (DelayObjIndex == 2)
+			bAnaseredRight = true;
+		else
+			bAnaseredRight = false;
 	}
 	else if ((a_key == GLFW_KEY_4))
 	{
-		fprintf(fileCache, "%d,%f,%f,%f,%d,4\n", curLoop, stiffcoeff1*maxStiffness, timeDelay, frequency, DelayObjIndex);
-		bAnswered = true;
+		//fprintf(fileCache, "%d,%f,%f,%f,%d,4\n", curLoop,coeff[curStiffIndex] * maxStiffness, timeDelay, frequency, DelayObjIndex);
+		//bAnswered = true;
 	}
     // option - exit
     else if ((a_key == GLFW_KEY_ESCAPE) || (a_key == GLFW_KEY_Q))
@@ -879,7 +910,7 @@ void updateGraphics(void)
 		//tool->updateDelayFrame(nDelay);
 	}
 	//tool->updateDelayFrame(nDelay);
-	printf("stiffness:%f Obj: %d delay:%f  %f  %d   frenquency %f\n", stiffcoeff1*maxStiffness, DelayObjIndex,timeDelay, delay, nDelay, frequency);
+	//printf("stiffness:%f Obj: %d delay:%f  %f  %d   frenquency %f\n", stiffcoeff1*maxStiffness, DelayObjIndex,timeDelay, delay, nDelay, frequency);
 
     // update haptic and graphic rate data
     labelRates->setText(cStr(freqCounterGraphics.getFrequency(), 0) + " Hz / " +
@@ -1047,12 +1078,13 @@ void updateHaptics(void)
 }
 void updateTestLoop(void)
 {
-	if (bAnswered || curLoop == 0)
+	if (bAnswered)
 	{
 		srand(time(NULL));
-		//int m = rand()%100;
-		//int n = rand()%100 / 100;
-		stiffcoeff1 = (float)(rand() % 95) / 100 +0.05;
+
+		//////////////////////////////////////////////////
+		//1-first test
+		/*stiffcoeff1 = (float)(rand() % 95) / 100 +0.05;
 		stiffcoeff2 = stiffcoeff1;// (float)(rand() % 100) / 100;
 		stiffcoeff3 = stiffcoeff1;// (float)(rand() % 100) / 100;
 
@@ -1064,14 +1096,81 @@ void updateTestLoop(void)
 		cylinder[1]->setStiffness(stiffcoeff2*maxStiffness);
 		cylinder[2]->setStiffness(stiffcoeff3*maxStiffness);
 
+		float delayCoeff = (float)(rand() % 100) / 100;
+		timeDelay = delayCoeff * maxTimeDelay;*/
+		//////////////////////////////////////////////
+
+		///////////////////////////////////////
+		//2- test
+		//adiust time or stiffness
+		//0-time
+		//1-stiffness
+		innerLoop++;
+		int timeOrStiff = rand() % 2;
+		
+		if (bAnaseredRight)
+		{
+			if (timeOrStiff == 0)
+			{
+				if (curTimeIndex > 0)
+					curTimeIndex = curTimeIndex-stepSize;
+				else
+					curStiffIndex = curStiffIndex -stepSize;
+
+			}
+			else
+			{
+				if (curStiffIndex > 0)
+					curStiffIndex = curStiffIndex - stepSize;
+				else
+					curTimeIndex = curTimeIndex - stepSize;
+			}
+				
+		}
+		else
+		{
+			if (stepSize > 1) stepSize--;
+			if (timeOrStiff == 0)
+			{
+				if (curTimeIndex <maxDiv)
+					curTimeIndex = curTimeIndex + stepSize;
+				else
+					curStiffIndex = curStiffIndex + stepSize;
+
+			}
+			else
+			{
+				if (curStiffIndex <maxDiv)
+					curStiffIndex = curTimeIndex + stepSize;
+				else
+					curTimeIndex = curStiffIndex + stepSize;
+			}
+		}
+		if (innerLoop > 5)
+		{
+			curStiffIndex = rand() % (maxDiv/2);
+			curTimeIndex = rand() % maxDiv;
+			innerLoop = 0;
+			curLoop++;
+			stepSize = 2;
+		}
+		if (curStiffIndex >= maxDiv) curStiffIndex = maxDiv - 1;
+		if (curStiffIndex < 0) curStiffIndex = 0;
+
+		if (curTimeIndex >= maxDiv) curTimeIndex = maxDiv - 1;
+		if (curTimeIndex < 0) curTimeIndex = 0;
+		for (int i = 0; i < 3; i++)
+		{
+			base[i]->setStiffness(coeff[curStiffIndex] * maxStiffness);
+			cylinder[i]->setStiffness(coeff[curStiffIndex] * maxStiffness);
+		}
+		timeDelay = coeff[curTimeIndex] * maxTimeDelay;
+		printf("stiffness index%d time index%d\n", curStiffIndex, curTimeIndex);
 		DelayObjIndex = rand() % 3;
 		tool->m_delayObject = base[DelayObjIndex];
-		float delayCoeff = (float)(rand() % 100) / 100;
-		timeDelay = delayCoeff * maxTimeDelay;
-		
+			
 		if(curLoop < maxtest)
 		{
-			curLoop++;
 			bAnswered = false; 
 		}
 		else

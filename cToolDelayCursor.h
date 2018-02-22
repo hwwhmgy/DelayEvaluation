@@ -13,6 +13,7 @@ public:
 	cToolDelayCursor(cWorld* a_parentWorld);
 	~cToolDelayCursor();
 
+
 	//double* m_forceArray[MAX_DELAY_FRAME];
 
 	//unsigned m_forceArrayIndex;
